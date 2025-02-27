@@ -24,11 +24,13 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
 declare -r gcc_directory='/tmp/gcc-13.3.0'
 
-declare -r optlto='-flto -fno-fat-lto-objects'
-declare -r optflags="-w -O2"
-declare -r linkflags="-Wl,-s"
+declare -r max_jobs='40'
 
-declare -r max_jobs="$(($(nproc) * 17))"
+declare -r optlto="-flto=${max_jobs} -fno-fat-lto-objects"
+declare -r optfatlto="-flto=${max_jobs} -ffat-lto-objects"
+
+declare -r optflags='-w -O2'
+declare -r linkflags='-Wl,-s'
 
 declare -ra triplets=(
 	'x86_64-unknown-haiku'
@@ -347,9 +349,9 @@ for triplet in "${triplets[@]}"; do
 		--disable-multilib \
 		--disable-nls \
 		--without-headers \
-		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
-		LDFLAGS="${linkflags}"
+		CFLAGS="${optflags} ${optfatlto}" \
+		CXXFLAGS="${optflags} ${optfatlto}" \
+		LDFLAGS="${linkflags} ${optfatlto}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
