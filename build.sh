@@ -317,7 +317,7 @@ for triplet in "${triplets[@]}"; do
 		--with-mpfr="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/Sil/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="Sil v0.6-${revision}" \
+		--with-pkgversion="Sil v0.7-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='gcc4-compatible' \
@@ -339,7 +339,7 @@ for triplet in "${triplets[@]}"; do
 		--enable-ld \
 		--enable-gold \
 		--enable-frame-pointer \
-		--disable-plugin \
+		--enable-plugin \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libatomic \
