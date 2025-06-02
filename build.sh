@@ -13,24 +13,25 @@ declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.3.0'
 
 declare -r mpfr_tarball='/tmp/mpfr.tar.xz'
-declare -r mpfr_directory='/tmp/mpfr-4.2.1'
+declare -r mpfr_directory='/tmp/mpfr-4.2.2'
 
 declare -r mpc_tarball='/tmp/mpc.tar.gz'
 declare -r mpc_directory='/tmp/mpc-1.3.1'
+
+declare -r isl_tarball='/tmp/isl.tar.xz'
+declare -r isl_directory='/tmp/isl-0.27'
 
 declare -r binutils_tarball='/tmp/binutils.tar.xz'
 declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-13.3.0'
+declare -r gcc_directory='/tmp/gcc-releases-gcc-13'
 
 declare -r max_jobs='40'
 
-declare -r optlto="-flto=${max_jobs} -fno-fat-lto-objects"
-declare -r optfatlto="-flto=${max_jobs} -ffat-lto-objects"
-
-declare -r optflags='-w -O2'
-declare -r linkflags='-Wl,-s'
+declare -r pieflags='-fPIE'
+declare -r optflags='-w -O2 -Xlinker --allow-multiple-definition'
+declare -r linkflags='-Xlinker -s'
 
 declare -ra triplets=(
 	'x86_64-unknown-haiku'
@@ -78,7 +79,7 @@ fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
 	curl \
-		--url 'https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.1.tar.xz' \
+		--url 'https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -110,6 +111,23 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--file="${mpc_tarball}"
 fi
 
+if ! [ -f "${isl_tarball}" ]; then
+	curl \
+		--url 'https://libisl.sourceforge.io/isl-0.27.tar.xz' \
+		--retry '30' \
+		--retry-all-errors \
+		--retry-delay '0' \
+		--retry-max-time '0' \
+		--location \
+		--silent \
+		--output "${isl_tarball}"
+	
+	tar \
+		--directory="$(dirname "${isl_directory}")" \
+		--extract \
+		--file="${isl_tarball}"
+fi
+
 if ! [ -f "${binutils_tarball}" ]; then
 	curl \
 		--url 'https://ftp.gnu.org/gnu/binutils/binutils-with-gold-2.44.tar.xz' \
@@ -132,7 +150,7 @@ fi
 
 if ! [ -f "${gcc_tarball}" ]; then
 	curl \
-		--url 'https://ftp.gnu.org/gnu/gcc/gcc-13.3.0/gcc-13.3.0.tar.xz' \
+		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-13.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -146,7 +164,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--extract \
 		--file="${gcc_tarball}"
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/haikuports/sys-devel/gcc/patches/gcc-13.3.0_2023_08_10.patchset"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/haikuports/sys-devel/gcc/patches/gcc-13.3.0_2023_08_10.patchset" || true
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/no_hardcoded_paths.patch"
 fi
 
@@ -159,10 +177,10 @@ rm --force --recursive ./*
 	--host="${CROSS_COMPILE_TRIPLET}" \
 	--prefix="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
-	CFLAGS="${optflags} ${optlto}" \
-	CXXFLAGS="${optflags} ${optlto}" \
-	LDFLAGS="${linkflags} ${optlto}"
+	--disable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -177,10 +195,10 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
-	CFLAGS="${optflags} ${optlto}" \
-	CXXFLAGS="${optflags} ${optlto}" \
-	LDFLAGS="${linkflags} ${optlto}"
+	--disable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
 
 make all --jobs
 make install
@@ -195,10 +213,28 @@ rm --force --recursive ./*
 	--prefix="${toolchain_directory}" \
 	--with-gmp="${toolchain_directory}" \
 	--enable-shared \
-	--enable-static \
-	CFLAGS="${optflags} ${optlto}" \
-	CXXFLAGS="${optflags} ${optlto}" \
-	LDFLAGS="${linkflags} ${optlto}"
+	--disable-static \
+	CFLAGS="${optflags}" \
+	CXXFLAGS="${optflags}" \
+	LDFLAGS="${linkflags}"
+
+make all --jobs
+make install
+
+[ -d "${isl_directory}/build" ] || mkdir "${isl_directory}/build"
+
+cd "${isl_directory}/build"
+rm --force --recursive ./*
+
+../configure \
+	--host="${CROSS_COMPILE_TRIPLET}" \
+	--prefix="${toolchain_directory}" \
+	--with-gmp-prefix="${toolchain_directory}" \
+	--enable-shared \
+	--disable-static \
+	CFLAGS="${pieflags} ${optflags}" \
+	CXXFLAGS="${pieflags} ${optflags}" \
+	LDFLAGS="-Xlinker -rpath-link -Xlinker ${toolchain_directory}/lib ${linkflags}"
 
 make all --jobs
 make install
@@ -219,9 +255,9 @@ for triplet in "${triplets[@]}"; do
 		--disable-gprofng \
 		--with-static-standard-libraries \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
-		CFLAGS="${optflags} ${optlto}" \
-		CXXFLAGS="${optflags} ${optlto}" \
-		LDFLAGS="${linkflags} ${optlto}"
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
+		LDFLAGS="${linkflags}"
 	
 	make all --jobs="${max_jobs}"
 	make install
@@ -315,6 +351,7 @@ for triplet in "${triplets[@]}"; do
 		--with-gmp="${toolchain_directory}" \
 		--with-mpc="${toolchain_directory}" \
 		--with-mpfr="${toolchain_directory}" \
+		--with-isl="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/Sil/issues' \
 		--with-gcc-major-version-only \
 		--with-pkgversion="Sil v0.7-${revision}" \
@@ -325,21 +362,30 @@ for triplet in "${triplets[@]}"; do
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
+		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-gnu-indirect-function \
 		--enable-gnu-unique-object \
 		--enable-libstdcxx-backtrace \
+		--enable-libstdcxx-filesystem-ts \
+		--enable-libstdcxx-static-eh-pool \
+		--with-libstdcxx-zoneinfo='static' \
+		--with-libstdcxx-lock-policy='auto' \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
 		--enable-shared \
 		--enable-threads='posix' \
+		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages='c,c++' \
 		--enable-ld \
 		--enable-gold \
 		--enable-frame-pointer \
 		--enable-plugin \
+		--enable-cxx-flags="${linkflags}" \
+		--enable-host-pie \
+		--enable-host-shared \
 		--disable-libsanitizer \
 		--disable-bootstrap \
 		--disable-libatomic \
@@ -349,9 +395,9 @@ for triplet in "${triplets[@]}"; do
 		--disable-multilib \
 		--disable-nls \
 		--without-headers \
-		CFLAGS="${optflags} ${optfatlto}" \
-		CXXFLAGS="${optflags} ${optfatlto}" \
-		LDFLAGS="${linkflags} ${optfatlto}"
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
+		LDFLAGS="${linkflags}"
 	
 	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
