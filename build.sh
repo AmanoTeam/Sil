@@ -379,6 +379,7 @@ for triplet in "${triplets[@]}"; do
 			-I${toolchain_directory}/${triplet}/include/glibc
 			-I${toolchain_directory}/${triplet}/include/gnu
 			-I${toolchain_directory}/${triplet}/include/posix
+			-I${toolchain_directory}/${triplet}/include/private
 			-I${toolchain_directory}/${triplet}/include
 		flags
 	)"
