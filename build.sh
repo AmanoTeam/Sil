@@ -193,12 +193,8 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--extract \
 		--file="${gcc_tarball}"
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/haikuports/sys-devel/gcc/patches/gcc-13.3.0_2023_08_10.patchset" || true
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Modifications-for-GCC-13.2.0-for-Haiku-from-buildtoo.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/no_hardcoded_paths.patch"
-	
-	# patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
@@ -219,6 +215,13 @@ while read file; do
 		--in-place \
 		--regexp-extended \
 		's|test -f /usr/libexec/ld.so|true|g' \
+		"${file}"
+done <<< "$(find '/tmp' -type 'f' -name 'configure')"
+
+while read file; do
+	sed \
+		--in-place \
+		's/dragonfly*/dragonfly* | haiku*/g; s/*-*-dragonfly*/*-*-dragonfly* | *-*-haiku*/g' \
 		"${file}"
 done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
