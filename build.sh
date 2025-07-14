@@ -218,13 +218,6 @@ while read file; do
 		"${file}"
 done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
-while read file; do
-	sed \
-		--in-place \
-		's/dragonfly*/dragonfly* | haiku*/g; s/*-*-dragonfly*/*-*-dragonfly* | *-*-haiku*/g' \
-		"${file}"
-done <<< "$(find '/tmp' -type 'f' -name 'configure')"
-
 # Force GCC and binutils to prefix host tools with the target triplet even in native builds
 sed \
 	--in-place \
