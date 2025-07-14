@@ -78,6 +78,8 @@ if ! [ -f "${gmp_tarball}" ]; then
 		--directory="$(dirname "${gmp_directory}")" \
 		--extract \
 		--file="${gmp_tarball}"
+	
+	patch --directory="${gmp_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libgmp.patch"
 fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
@@ -95,6 +97,8 @@ if ! [ -f "${mpfr_tarball}" ]; then
 		--directory="$(dirname "${mpfr_directory}")" \
 		--extract \
 		--file="${mpfr_tarball}"
+	
+	patch --directory="${mpfr_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpfr.patch"
 fi
 
 if ! [ -f "${mpc_tarball}" ]; then
@@ -112,6 +116,8 @@ if ! [ -f "${mpc_tarball}" ]; then
 		--directory="$(dirname "${mpc_directory}")" \
 		--extract \
 		--file="${mpc_tarball}"
+	
+	patch --directory="${mpc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libmpc.patch"
 fi
 
 if ! [ -f "${isl_tarball}" ]; then
@@ -129,6 +135,8 @@ if ! [ -f "${isl_tarball}" ]; then
 		--directory="$(dirname "${isl_directory}")" \
 		--extract \
 		--file="${isl_tarball}"
+	
+	patch --directory="${isl_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libisl.patch"
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
@@ -149,6 +157,7 @@ if ! [ -f "${binutils_tarball}" ]; then
 	
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Revert-gold-Use-char16_t-char32_t-instead-of-uint16_.patch"
 	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Disable-annoying-linker-warnings.patch"
+	patch --directory="${binutils_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-binutils-host-tools.patch"
 fi
 
 if ! [ -f "${zstd_tarball}" ]; then
@@ -186,7 +195,39 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/haikuports/sys-devel/gcc/patches/gcc-13.3.0_2023_08_10.patchset" || true
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/no_hardcoded_paths.patch"
+	
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
+
+# Follow Debian's approach for removing hardcoded RPATH from binaries
+# https://wiki.debian.org/RpathIssue
+sed \
+	--in-place \
+	--regexp-extended \
+	's/(hardcode_into_libs)=.*$/\1=no/' \
+	"${isl_directory}/configure" \
+	"${mpc_directory}/configure" \
+	"${mpfr_directory}/configure" \
+	"${gmp_directory}/configure" \
+	"${gcc_directory}/libsanitizer/configure"
+
+# Fix Autotools mistakenly detecting shared libraries as not supported on OpenBSD
+while read file; do
+	sed \
+		--in-place \
+		--regexp-extended \
+		's|test -f /usr/libexec/ld.so|true|g' \
+		"${file}"
+done <<< "$(find '/tmp' -type 'f' -name 'configure')"
+
+# Force GCC and binutils to prefix host tools with the target triplet even in native builds
+sed \
+	--in-place \
+	's/test "$host_noncanonical" = "$target_noncanonical"/false/' \
+	"${gcc_directory}/configure" \
+	"${binutils_directory}/configure"
 
 [ -d "${gmp_directory}/build" ] || mkdir "${gmp_directory}/build"
 
@@ -278,6 +319,8 @@ cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
 
 for triplet in "${triplets[@]}"; do
+	declare extra_configure_flags=''
+	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
 	cd "${binutils_directory}/build"
@@ -290,12 +333,18 @@ for triplet in "${triplets[@]}"; do
 		--enable-gold \
 		--enable-ld \
 		--enable-lto \
+		--enable-separate-code \
+		--enable-rosegment \
+		--enable-relro \
+		--enable-compressed-debug-sections='all' \
+		--enable-default-compressed-debug-sections-algorithm='zstd' \
 		--disable-gprofng \
-		--with-static-standard-libraries \
+		--disable-default-execstack \
+		--without-static-standard-libraries \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-zstd="${toolchain_directory}" \
-		CFLAGS="${optflags} -I${toolchain_directory}/include" \
-		CXXFLAGS="${optflags} -I${toolchain_directory}/include" \
+		CFLAGS="${optflags}" \
+		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
 	make all --jobs="${max_jobs}"
@@ -377,6 +426,11 @@ for triplet in "${triplets[@]}"; do
 	
 	sed --in-place 's/__GNUC__ <= 12/__GNUC__ <= 13/g' "${toolchain_directory}/${triplet}/include/os/BeBuild.h"
 	
+	if ! (( is_native )); then
+		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
+		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
+	fi
+	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
 	
 	cd "${gcc_directory}/build"
@@ -405,12 +459,12 @@ for triplet in "${triplets[@]}"; do
 		--enable-default-pie \
 		--enable-default-ssp \
 		--enable-gnu-indirect-function \
-		--enable-gnu-unique-object \
+		--disable-gnu-unique-object \
 		--enable-libstdcxx-backtrace \
 		--enable-libstdcxx-filesystem-ts \
 		--enable-libstdcxx-static-eh-pool \
 		--with-libstdcxx-zoneinfo='static' \
-		--with-libstdcxx-lock-policy='auto' \
+		--with-libstdcxx-lock-policy='atomic' \
 		--enable-link-serialization='1' \
 		--enable-linker-build-id \
 		--enable-lto \
@@ -419,23 +473,22 @@ for triplet in "${triplets[@]}"; do
 		--enable-libstdcxx-threads \
 		--enable-libssp \
 		--enable-languages='c,c++' \
-		--enable-ld \
-		--enable-gold \
 		--enable-frame-pointer \
 		--enable-plugin \
 		--enable-cxx-flags="${linkflags}" \
 		--enable-host-pie \
 		--enable-host-shared \
+		--enable-host-bind-now \
+		--enable-libsanitizer \
 		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
-		--disable-libsanitizer \
 		--disable-bootstrap \
-		--disable-libatomic \
 		--disable-libgomp \
 		--disable-libstdcxx-pch \
 		--disable-werror \
 		--disable-multilib \
 		--disable-nls \
 		--without-headers \
+		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
