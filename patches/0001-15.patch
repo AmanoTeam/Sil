@@ -1,6 +1,6 @@
-From e75fe8310e328cd6df53cd6c7295f20d8b0d0ce6 Mon Sep 17 00:00:00 2001
+From c414eaf03abd2f4a63d2483ade3a0ed72583ee6c Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Mon, 14 Jul 2025 23:35:23 -0300
+Date: Tue, 15 Jul 2025 15:05:37 -0300
 Subject: [PATCH] 15
 
 ---
@@ -13,9 +13,9 @@ Subject: [PATCH] 15
  gcc/Makefile.in                               |   19 +-
  gcc/config.gcc                                |   71 +-
  gcc/config.host                               |   12 +-
- gcc/config/aarch64/aarch64-haiku.h            |   71 +
+ gcc/config/aarch64/aarch64-haiku.h            |   72 +
  gcc/config/aarch64/t-aarch64-haiku            |   21 +
- gcc/config/arm/haiku.h                        |   71 +
+ gcc/config/arm/haiku.h                        |   72 +
  gcc/config/arm/t-haiku                        |   21 +
  gcc/config/haiku-protos.h                     |   21 +
  gcc/config/haiku-stdint.h                     |   55 +
@@ -24,14 +24,14 @@ Subject: [PATCH] 15
  gcc/config/haiku.opt                          |   32 +
  gcc/config/haiku.opt.urls                     |    2 +
  gcc/config/i386/haiku.h                       |   69 +
- gcc/config/i386/haiku64.h                     |  106 +
+ gcc/config/i386/haiku64.h                     |  107 +
  gcc/config/i386/t-haiku64                     |   16 +
  gcc/config/m68k/haiku.h                       |  266 ++
  gcc/config/mips/haiku.h                       |   42 +
  gcc/config/riscv/haiku.h                      |   59 +
  gcc/config/riscv/t-haiku                      |    4 +
  gcc/config/rs6000/haiku.h                     |   73 +
- gcc/config/sparc/haiku.h                      |   93 +
+ gcc/config/sparc/haiku.h                      |   95 +
  gcc/config/sparc/t-haiku                      |    5 +
  gcc/config/t-haiku                            |    9 +
  gcc/configure                                 |   40 +-
@@ -62,7 +62,7 @@ Subject: [PATCH] 15
  libstdc++-v3/crossconfig.m4                   |   44 +-
  libstdc++-v3/libsupc++/tinfo.cc               |    9 +
  libtool.m4                                    |   11 +-
- 58 files changed, 3614 insertions(+), 1354 deletions(-)
+ 58 files changed, 3619 insertions(+), 1354 deletions(-)
  create mode 100644 gcc/config/aarch64/aarch64-haiku.h
  create mode 100644 gcc/config/aarch64/t-aarch64-haiku
  create mode 100644 gcc/config/arm/haiku.h
@@ -84,7 +84,6 @@ Subject: [PATCH] 15
  create mode 100644 gcc/config/sparc/haiku.h
  create mode 100644 gcc/config/sparc/t-haiku
  create mode 100644 gcc/config/t-haiku
- mode change 100755 => 100644 gcc/configure
  create mode 100644 libgcc/config/aarch64/haiku-unwind.h
  create mode 100644 libgcc/config/t-haiku
  create mode 100644 libstdc++-v3/config/os/haiku/ctype_base.h
@@ -4534,10 +4533,10 @@ index 4c1a5e991..ad77b0695 100644
        ;;
 diff --git a/gcc/config/aarch64/aarch64-haiku.h b/gcc/config/aarch64/aarch64-haiku.h
 new file mode 100644
-index 000000000..6ab98a4a0
+index 000000000..ae81be965
 --- /dev/null
 +++ b/gcc/config/aarch64/aarch64-haiku.h
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,72 @@
 +/* Machine description for AArch64 architecture.
 +   Copyright (C) 2009-2018 Free Software Foundation, Inc.
 +   Contributed by ARM Ltd.
@@ -4606,7 +4605,8 @@ index 000000000..6ab98a4a0
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "-m " TARGET_LINKER_EMULATION " %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}\
-+	%{mbig-endian:-EB} %{mlittle-endian:-EL} " CA53_ERR_835769_SPEC " " CA53_ERR_843419_SPEC " -X"
++	%{mbig-endian:-EB} %{mlittle-endian:-EL} " CA53_ERR_835769_SPEC " " CA53_ERR_843419_SPEC " -X" \
++	" %{rdynamic:-export-dynamic}"
 +
 +#endif  /* GCC_AARCH64_HAIKU_H */
 diff --git a/gcc/config/aarch64/t-aarch64-haiku b/gcc/config/aarch64/t-aarch64-haiku
@@ -4638,10 +4638,10 @@ index 000000000..99d3dea36
 +LIB1ASMFUNCS = _aarch64_sync_cache_range
 diff --git a/gcc/config/arm/haiku.h b/gcc/config/arm/haiku.h
 new file mode 100644
-index 000000000..543ba9dd4
+index 000000000..90e684aaf
 --- /dev/null
 +++ b/gcc/config/arm/haiku.h
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,72 @@
 +/*	Definitions for ARM running Haiku systems using ELF
 +	Copyright (C) 1993, 1994, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004,
 +	2005 Free Software Foundation, Inc.
@@ -4711,7 +4711,8 @@ index 000000000..543ba9dd4
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "-m armelf_haiku %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}\
-+  %{mbig-endian:-EB} %{mlittle-endian:-EL} -X"
++  %{mbig-endian:-EB} %{mlittle-endian:-EL} -X" \
++  " %{rdynamic:-export-dynamic}"
 +
 diff --git a/gcc/config/arm/t-haiku b/gcc/config/arm/t-haiku
 new file mode 100644
@@ -5112,7 +5113,7 @@ index 000000000..b768dfdf1
 +#define USE_TM_CLONE_REGISTRY 0
 diff --git a/gcc/config/haiku.opt b/gcc/config/haiku.opt
 new file mode 100644
-index 000000000..6a44a4125
+index 000000000..5b22f3b44
 --- /dev/null
 +++ b/gcc/config/haiku.opt
 @@ -0,0 +1,32 @@
@@ -5158,7 +5159,7 @@ index 000000000..b9fa303c4
 +
 diff --git a/gcc/config/i386/haiku.h b/gcc/config/i386/haiku.h
 new file mode 100644
-index 000000000..d8c208d58
+index 000000000..c44ad1779
 --- /dev/null
 +++ b/gcc/config/i386/haiku.h
 @@ -0,0 +1,69 @@
@@ -5217,7 +5218,7 @@ index 000000000..d8c208d58
 +/* If ELF is the default format, we should not use /lib/elf.  */
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC "-m elf_i386_haiku %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}"
++#define LINK_SPEC "-m elf_i386_haiku %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}} %{rdynamic:-export-dynamic}"
 +
 +/* A C statement (sans semicolon) to output to the stdio stream
 +   FILE the assembler definition of uninitialized global DECL named
@@ -5233,10 +5234,10 @@ index 000000000..d8c208d58
 +#define CC1_SPEC HAIKU_CC1_SPEC
 diff --git a/gcc/config/i386/haiku64.h b/gcc/config/i386/haiku64.h
 new file mode 100644
-index 000000000..d9d99c3b1
+index 000000000..5fe34d835
 --- /dev/null
 +++ b/gcc/config/i386/haiku64.h
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,107 @@
 +/* Definitions for AMD x86_64 running Haiku with ELF format.
 +   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004
 +   Free Software Foundation, Inc.
@@ -5304,7 +5305,8 @@ index 000000000..d9d99c3b1
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "%{" SPEC_64 ":-m elf_x86_64_haiku} %{" SPEC_32 ":-m elf_i386_haiku} \
-+	%{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}"
++	%{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}" \
++	" %{rdynamic:-export-dynamic}"
 +
 +/* A C statement (sans semicolon) to output to the stdio stream
 +   FILE the assembler definition of uninitialized global DECL named
@@ -5367,7 +5369,7 @@ index 000000000..9c8f8e62e
 +TARGET_LIBGCC2_CFLAGS = -fPIC
 diff --git a/gcc/config/m68k/haiku.h b/gcc/config/m68k/haiku.h
 new file mode 100644
-index 000000000..2b117fcb1
+index 000000000..d1db90ff5
 --- /dev/null
 +++ b/gcc/config/m68k/haiku.h
 @@ -0,0 +1,266 @@
@@ -5479,7 +5481,7 @@ index 000000000..2b117fcb1
 +
 +#undef	LINK_SPEC
 +/*#define LINK_SPEC "%{!o*:-o %b} -m elf_m68k_haiku -shared -no-undefined %{nostart:-e 0}"*/
-+#define LINK_SPEC "-m m68kelf %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}"
++#define LINK_SPEC "-m m68kelf %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}} %{rdynamic:-export-dynamic}"
 +
 +/* XXX: not sure for the rest there... */
 +
@@ -5639,7 +5641,7 @@ index 000000000..2b117fcb1
 +}
 diff --git a/gcc/config/mips/haiku.h b/gcc/config/mips/haiku.h
 new file mode 100644
-index 000000000..aa3dcded9
+index 000000000..8bd46a7e8
 --- /dev/null
 +++ b/gcc/config/mips/haiku.h
 @@ -0,0 +1,42 @@
@@ -5683,11 +5685,11 @@ index 000000000..aa3dcded9
 +  while (0)
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC "-m elf_mipsel_haiku %{!r:-shared} %{nostart:-e 0}"
++#define LINK_SPEC "-m elf_mipsel_haiku %{!r:-shared} %{nostart:-e 0} %{rdynamic:-export-dynamic}"
 +
 diff --git a/gcc/config/riscv/haiku.h b/gcc/config/riscv/haiku.h
 new file mode 100644
-index 000000000..0dfb3c544
+index 000000000..f20bd50f7
 --- /dev/null
 +++ b/gcc/config/riscv/haiku.h
 @@ -0,0 +1,59 @@
@@ -5749,7 +5751,7 @@ index 000000000..0dfb3c544
 +#define ICACHE_FLUSH_FUNC "__riscv_flush_icache"
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC "-melf" XLEN_SPEC DEFAULT_ENDIAN_SPEC "riscv" LD_EMUL_SUFFIX " %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}} -X"
++#define LINK_SPEC "-melf" XLEN_SPEC DEFAULT_ENDIAN_SPEC "riscv" LD_EMUL_SUFFIX " %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}} -X %{rdynamic:-export-dynamic}"
 diff --git a/gcc/config/riscv/t-haiku b/gcc/config/riscv/t-haiku
 new file mode 100644
 index 000000000..6cccc72ae
@@ -5762,7 +5764,7 @@ index 000000000..6cccc72ae
 +#MULTILIB_OSDIRNAMES := $(patsubst lib%,../lib%,$(MULTILIB_DIRNAMES))
 diff --git a/gcc/config/rs6000/haiku.h b/gcc/config/rs6000/haiku.h
 new file mode 100644
-index 000000000..f1f1317be
+index 000000000..9ec1e1919
 --- /dev/null
 +++ b/gcc/config/rs6000/haiku.h
 @@ -0,0 +1,73 @@
@@ -5823,7 +5825,7 @@ index 000000000..f1f1317be
 +/* If ELF is the default format, we should not use /lib/elf.  */
 +
 +#undef	LINK_SPEC
-+#define LINK_SPEC "-m elf32ppchaiku %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}"
++#define LINK_SPEC "-m elf32ppchaiku %{!r:-shared} %{nostart:-e 0} %{shared:-e 0} %{!shared: %{!nostart: -no-undefined}} %{rdynamic:-export-dynamic}"
 +
 +/* override options from sysv4.h */
 +#undef SUBTARGET_OVERRIDE_OPTIONS
@@ -5841,10 +5843,10 @@ index 000000000..f1f1317be
 + while (0)
 diff --git a/gcc/config/sparc/haiku.h b/gcc/config/sparc/haiku.h
 new file mode 100644
-index 000000000..8c81d7eb2
+index 000000000..6ba1cb11b
 --- /dev/null
 +++ b/gcc/config/sparc/haiku.h
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,95 @@
 +/* Definitions of target machine for GCC, for ELF on Haiku/sparc64.
 +   Copyright (C) 2002-2017 Free Software Foundation, Inc.
 +   Contributed by Matthew Green (mrg@eterna.com.au).
@@ -5888,7 +5890,9 @@ index 000000000..8c81d7eb2
 +
 +#undef	LINK_SPEC
 +#define LINK_SPEC "-m elf64_sparc %{!r:-shared} %{nostart:-e 0} \
-+	%{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}"
++	%{shared:-e 0} %{!shared: %{!nostart: -no-undefined}}" \
++	" %{rdynamic:-export-dynamic}"
++
 +/* SIZE_TYPE and PTRDIFF_TYPE are wrong from sparc/sparc.h.  */
 +#undef SIZE_TYPE
 +#define SIZE_TYPE "long unsigned int"
@@ -5965,7 +5969,7 @@ index 000000000..ba1f7f517
 +	$(COMPILE) $<
 +	$(POSTCOMPILE)
 diff --git a/gcc/configure b/gcc/configure
-index 16965953f..8324f1e74
+index 16965953f..8324f1e74 100755
 --- a/gcc/configure
 +++ b/gcc/configure
 @@ -815,6 +815,7 @@ LDEXP_LIB
