@@ -393,7 +393,7 @@ for triplet in "${triplets[@]}"; do
 		flags
 	)"
 	
-	declare sysroot="https://github.com/AmanoTeam/haiku-sysroot/releases/download/0.1/${triplet}.tar.xz"
+	declare sysroot="https://github.com/AmanoTeam/haiku-sysroot/releases/latest/download/${triplet}.tar.xz"
 	declare sysroot_file="/tmp/${triplet}.tar.xz"
 	declare sysroot_directory="/tmp/${triplet}"
 	
