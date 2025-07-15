@@ -430,7 +430,7 @@ for triplet in "${triplets[@]}"; do
 	
 	cp --no-dereference --recursive "${sysroot_directory}/system/develop/headers/"* "${toolchain_directory}/${triplet}/include"
 	
-	sed --in-place 's/&& __GNUC__ <= 14//g' "${toolchain_directory}/${triplet}/include/os/BeBuild.h"
+	sed --in-place 's/ && __GNUC__ <= 14//g' "${toolchain_directory}/${triplet}/include/be/BeBuild.h"
 	
 	if ! (( is_native )); then
 		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
@@ -485,9 +485,9 @@ for triplet in "${triplets[@]}"; do
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-host-bind-now \
+		--enable-libgomp \
 		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
 		--disable-bootstrap \
-		--disable-libgomp \
 		--disable-libstdcxx-pch \
 		--disable-werror \
 		--disable-multilib \
