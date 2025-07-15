@@ -33,7 +33,7 @@ declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
 declare -r max_jobs='40'
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -O2 -Xlinker --allow-multiple-definition'
+declare -r optflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
 declare -ra triplets=(
@@ -430,7 +430,7 @@ for triplet in "${triplets[@]}"; do
 	
 	cp --no-dereference --recursive "${sysroot_directory}/system/develop/headers/"* "${toolchain_directory}/${triplet}/include"
 	
-	sed --in-place 's/__GNUC__ <= 12/__GNUC__ <= 13/g' "${toolchain_directory}/${triplet}/include/os/BeBuild.h"
+	sed --in-place 's/&& __GNUC__ <= 14//g' "${toolchain_directory}/${triplet}/include/os/BeBuild.h"
 	
 	if ! (( is_native )); then
 		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
