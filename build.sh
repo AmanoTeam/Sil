@@ -227,10 +227,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
-	
-	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-haiku'* ]]; then
-		patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Link-g-mapper-server-with-lnetwork-on-Haiku.patch"
-	fi
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Link-g-mapper-server-with-lnetwork-on-Haiku.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
