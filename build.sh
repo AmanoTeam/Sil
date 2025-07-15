@@ -35,7 +35,7 @@ declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
 declare -r max_jobs='40'
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -Oz'
+declare -r optflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
 declare -ra triplets=(
@@ -528,6 +528,7 @@ for triplet in "${triplets[@]}"; do
 		--disable-multilib \
 		--disable-nls \
 		--disable-libsanitizer \
+		--disable-c++-tools \
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
