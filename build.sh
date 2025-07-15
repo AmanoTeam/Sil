@@ -41,6 +41,24 @@ declare -ra triplets=(
 	'i586-unknown-haiku'
 )
 
+declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
+declare -r PKG_CONFIG_LIBDIR="${PKG_CONFIG_PATH}"
+declare -r PKG_CONFIG_SYSROOT_DIR="${toolchain_directory}"
+
+declare -r pkg_cv_ZSTD_CFLAGS="-I${toolchain_directory}/include"
+declare -r pkg_cv_ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
+declare -r ZSTD_CFLAGS="-I${toolchain_directory}/include"
+declare -r ZSTD_LIBS="-L${toolchain_directory}/lib -lzstd"
+
+export \
+	PKG_CONFIG_PATH \
+	PKG_CONFIG_LIBDIR \
+	PKG_CONFIG_SYSROOT_DIR \
+	pkg_cv_ZSTD_CFLAGS \
+	pkg_cv_ZSTD_LIBS \
+	ZSTD_CFLAGS \
+	ZSTD_LIBS
+
 declare build_type="${1}"
 
 if [ -z "${build_type}" ]; then
@@ -323,6 +341,16 @@ cmake \
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
 
+# We prefer symbolic links over hard links.
+cp "${workdir}/submodules/obggcc/tools/ln.sh" '/tmp/ln'
+
+export PATH="/tmp:${PATH}"
+
+# The gold linker build incorrectly detects ffsll() as unsupported.
+if [[ "${CROSS_COMPILE_TRIPLET}" == *'-android'* ]]; then
+	export ac_cv_func_ffsll=yes
+fi
+
 for triplet in "${triplets[@]}"; do
 	declare extra_configure_flags=''
 	
@@ -505,6 +533,10 @@ for triplet in "${triplets[@]}"; do
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
 		all --jobs="${max_jobs}"
 	make install
+	
+	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
+	
+	[ -f './libiberty.a' ] && unlink './libiberty.a'
 	
 	cd "${toolchain_directory}/lib/bfd-plugins"
 	
