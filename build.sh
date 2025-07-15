@@ -28,7 +28,7 @@ declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-releases-gcc-13'
+declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
 
 declare -r max_jobs='40'
 
