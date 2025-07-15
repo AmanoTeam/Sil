@@ -35,7 +35,7 @@ declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
 declare -r max_jobs='40'
 
 declare -r pieflags='-fPIE'
-declare -r optflags='-w -O2'
+declare -r optflags='-w -Oz'
 declare -r linkflags='-Xlinker -s'
 
 declare -ra triplets=(
