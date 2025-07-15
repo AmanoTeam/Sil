@@ -179,7 +179,7 @@ fi
 
 if ! [ -f "${gcc_tarball}" ]; then
 	curl \
-		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-13.tar.gz' \
+		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-15.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -193,8 +193,17 @@ if ! [ -f "${gcc_tarball}" ]; then
 		--extract \
 		--file="${gcc_tarball}"
 	
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Modifications-for-GCC-13.2.0-for-Haiku-from-buildtoo.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-15.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/no_hardcoded_paths.patch"
+	
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-libgcc-build-on-arm.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Change-the-default-language-version-for-C-compilatio.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Turn-Wimplicit-int-back-into-an-warning.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Turn-Wint-conversion-back-into-an-warning.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
@@ -485,6 +494,7 @@ for triplet in "${triplets[@]}"; do
 		--disable-nls \
 		--disable-libsanitizer \
 		--without-headers \
+		--without-static-standard-libraries \
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
 		CXXFLAGS="${optflags}" \
@@ -501,13 +511,56 @@ for triplet in "${triplets[@]}"; do
 	if ! [ -f './liblto_plugin.so' ]; then
 		ln --symbolic "../../libexec/gcc/${triplet}/"*'/liblto_plugin.so' './'
 	fi
-	
-	rm --recursive "${toolchain_directory}/share"
-	
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*"/cc1"
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*"/cc1plus"
-	patchelf --add-rpath '$ORIGIN/../../../../lib' "${toolchain_directory}/libexec/gcc/${triplet}/"*"/lto1"
 done
+
+# Delete libtool files and other unnecessary files GCC installs
+rm --force --recursive "${toolchain_directory}/share"
+
+find \
+	"${toolchain_directory}" \
+	-name '*.la' -delete -o \
+	-name '*.py' -delete -o \
+	-name '*.json' -delete
+
+declare cc='gcc'
+declare readelf='readelf'
+
+if ! (( is_native )); then
+	cc="${CC}"
+	readelf="${READELF}"
+fi
+
+# Bundle both libstdc++ and libgcc within host tools
+if ! (( is_native )); then
+	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
+	
+	# libstdc++
+	declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
+	
+	# libestdc++
+	if ! [ -f "${name}" ]; then
+		declare name=$(realpath $("${cc}" --print-file-name='libestdc++.so'))
+	fi
+	
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	# OpenBSD does not have a libgcc library
+	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-openbsd'* ]]; then
+		# libgcc_s
+		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+		
+		# libegcc
+		if ! [ -f "${name}" ]; then
+			declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
+		fi
+		
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
+fi
 
 mkdir --parent "${share_directory}"
 
