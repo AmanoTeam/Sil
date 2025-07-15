@@ -1,27 +1,28 @@
-From 47370927891a8684ce6dd1dc4a1bade04cb01365 Mon Sep 17 00:00:00 2001
+From 3f78948a7cb87a9e43b0486d23248b1e5d4c1f30 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 17:32:03 -0300
 Subject: [PATCH] Link g++-mapper-server with -lnetwork on Haiku
 
 ---
- c++tools/Makefile.in | 4 ++++
- 1 file changed, 4 insertions(+)
+ c++tools/Makefile.in | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
-index 5acc6d681..505e5dcd8 100644
+index 5acc6d681..909efd53e 100644
 --- a/c++tools/Makefile.in
 +++ b/c++tools/Makefile.in
-@@ -94,6 +94,10 @@ ifneq ($(PICFLAG),)
- override LIBIBERTY := ../libiberty/pic/libiberty.a
- endif
+@@ -37,6 +37,11 @@ exeext := @EXEEXT@
+ LIBIBERTY := ../libiberty/libiberty.a
+ VERSION.O := ../gcc/version.o
  
 +ifneq (,$(findstring haiku,$(host)))
-+	LDFLAGS += -lnetwork
++        LDFLAGS += -lnetwork
++	CXXOPTS += -lnetwork
 +endif
 +
- MAPPER.O := server.o resolver.o
- CODYLIB = ../libcody/libcody.a
- CXXINC += -I$(srcdir)/../libcody -I$(srcdir)/../include -I$(srcdir)/../gcc -I. -I../gcc
+ all::
+ 
+ mostlyclean::
 -- 
 2.49.0
 
