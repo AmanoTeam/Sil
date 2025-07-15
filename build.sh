@@ -61,6 +61,8 @@ export \
 	ZSTD_CFLAGS \
 	ZSTD_LIBS
 
+export ac_cv_c_bigendian=no
+
 declare build_type="${1}"
 
 if [ -z "${build_type}" ]; then
