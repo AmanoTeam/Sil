@@ -9,6 +9,8 @@ declare -r workdir="${PWD}"
 declare -r toolchain_directory='/tmp/sil'
 declare -r share_directory="${toolchain_directory}/usr/local/share/sil"
 
+declare -r environment="LD_LIBRARY_PATH=${toolchain_directory}/lib PATH=${PATH}:${toolchain_directory}/bin"
+
 declare -r gmp_tarball='/tmp/gmp.tar.xz'
 declare -r gmp_directory='/tmp/gmp-6.3.0'
 
@@ -71,11 +73,13 @@ if [ "${build_type}" = 'native' ]; then
 	is_native='1'
 fi
 
-declare CROSS_COMPILE_TRIPLET=''
+set +u
 
-if ! (( is_native )); then
-	source "./submodules/obggcc/toolchains/${build_type}.sh"
+if [ -z "${CROSS_COMPILE_TRIPLET}" ]; then
+	declare CROSS_COMPILE_TRIPLET=''
 fi
+
+set -u
 
 declare -r \
 	build_type \
@@ -336,7 +340,8 @@ cmake \
 	-DBUILD_SHARED_LIBS=ON \
 	-DZSTD_BUILD_PROGRAMS=OFF \
 	-DZSTD_BUILD_TESTS=OFF \
-	-DZSTD_BUILD_STATIC=OFF
+	-DZSTD_BUILD_STATIC=OFF \
+	-DCMAKE_PLATFORM_NO_VERSIONED_SONAME=ON
 
 cmake --build "${PWD}"
 cmake --install "${PWD}" --strip
@@ -528,7 +533,13 @@ for triplet in "${triplets[@]}"; do
 		CXXFLAGS="${optflags}" \
 		LDFLAGS="${linkflags}"
 	
-	LD_LIBRARY_PATH="${toolchain_directory}/lib" PATH="${PATH}:${toolchain_directory}/bin" make \
+	declare args=''
+	
+	if (( is_native )); then
+		args+="${environment}"
+	fi
+	
+	env ${args} make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
 		all --jobs="${max_jobs}"
