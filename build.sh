@@ -476,7 +476,6 @@ for triplet in "${triplets[@]}"; do
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-host-bind-now \
-		--enable-libsanitizer \
 		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
 		--disable-bootstrap \
 		--disable-libgomp \
@@ -484,6 +483,7 @@ for triplet in "${triplets[@]}"; do
 		--disable-werror \
 		--disable-multilib \
 		--disable-nls \
+		--disable-libsanitizer \
 		--without-headers \
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
