@@ -544,6 +544,7 @@ for triplet in "${triplets[@]}"; do
 	env ${args} make \
 		CFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
 		CXXFLAGS_FOR_TARGET="${optflags} ${linkflags} ${cinclude_flags}" \
+		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all --jobs="${max_jobs}"
 	make install
 	

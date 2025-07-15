@@ -5145,7 +5145,7 @@ index 000000000..6a44a4125
 +Driver
 +
 +rdynamic
-+Ignore
++Driver
 +
 +; This comment is to ensure we retain the blank line above.
 diff --git a/gcc/config/haiku.opt.urls b/gcc/config/haiku.opt.urls
