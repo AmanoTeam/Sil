@@ -1,28 +1,38 @@
-From 3f78948a7cb87a9e43b0486d23248b1e5d4c1f30 Mon Sep 17 00:00:00 2001
+From 543aeaf71e9f4b129c4fdfef49724c35ba9f2e70 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 17:32:03 -0300
 Subject: [PATCH] Link g++-mapper-server with -lnetwork on Haiku
 
 ---
- c++tools/Makefile.in | 5 +++++
- 1 file changed, 5 insertions(+)
+ c++tools/Makefile.in | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
-index 5acc6d681..909efd53e 100644
+index 5acc6d681..fd464c14d 100644
 --- a/c++tools/Makefile.in
 +++ b/c++tools/Makefile.in
-@@ -37,6 +37,11 @@ exeext := @EXEEXT@
+@@ -37,6 +37,12 @@ exeext := @EXEEXT@
  LIBIBERTY := ../libiberty/libiberty.a
  VERSION.O := ../gcc/version.o
  
++HAIKU_LDFLAGS = 
++
 +ifneq (,$(findstring haiku,$(host)))
-+        LDFLAGS += -lnetwork
-+	CXXOPTS += -lnetwork
++        HAIKU_LDFLAGS += -lnetwork
 +endif
 +
  all::
  
  mostlyclean::
+@@ -98,7 +104,7 @@ MAPPER.O := server.o resolver.o
+ CODYLIB = ../libcody/libcody.a
+ CXXINC += -I$(srcdir)/../libcody -I$(srcdir)/../include -I$(srcdir)/../gcc -I. -I../gcc
+ g++-mapper-server$(exeext): $(MAPPER.O) $(CODYLIB)
+-	+$(CXX) $(LDFLAGS) $(PICFLAG) $(LD_PICFLAG) -o $@ $^ $(LIBIBERTY)
++	+$(CXX) $(LDFLAGS) $(HAIKU_LDFLAGS) $(PICFLAG) $(LD_PICFLAG) -o $@ $^ $(LIBIBERTY)
+ 
+ # copy to gcc dir so tests there can run
+ all::../gcc/g++-mapper-server$(exeext)
 -- 
 2.49.0
 
