@@ -529,6 +529,7 @@ for triplet in "${triplets[@]}"; do
 		--enable-host-bind-now \
 		--enable-libgomp \
 		--with-specs='%{!fno-plt:%{!fplt:-fno-plt}}' \
+		--disable-c++-tools \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-werror \
