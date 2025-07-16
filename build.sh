@@ -496,7 +496,7 @@ for triplet in "${triplets[@]}"; do
 		--with-zstd="${toolchain_directory}" \
 		--with-bugurl='https://github.com/AmanoTeam/Sil/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="Sil v0.7-${revision}" \
+		--with-pkgversion="Sil v0.8-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='gcc4-compatible' \
@@ -566,6 +566,14 @@ for triplet in "${triplets[@]}"; do
 	
 	if ! [ -f './liblto_plugin.so' ]; then
 		ln --symbolic "../../libexec/gcc/${triplet}/"*'/liblto_plugin.so' './'
+	fi
+	
+	if [ "${CROSS_COMPILE_TRIPLET}" = "${triplet}" ]; then
+		ln \
+			--symbolic \
+			--relative \
+			"${toolchain_directory}/${triplet}/include/c++" \
+			"${toolchain_directory}/include"
 	fi
 done
 
