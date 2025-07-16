@@ -229,7 +229,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Revert-GCC-change-about-turning-Wimplicit-function-d.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Add-relative-RPATHs-to-GCC-host-tools.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-Link-g-mapper-server-with-lnetwork-on-Haiku.patch"
 fi
 
 # Follow Debian's approach for removing hardcoded RPATH from binaries
@@ -362,6 +361,11 @@ fi
 
 for triplet in "${triplets[@]}"; do
 	declare extra_configure_flags=''
+	declare extra_cxx_flags=''
+	
+	if [[ "${CROSS_COMPILE_TRIPLET}" == *'-haiku'* ]]; then
+		extra_cxx_flags+='-lnetwork'
+	fi
 	
 	[ -d "${binutils_directory}/build" ] || mkdir "${binutils_directory}/build"
 	
@@ -535,7 +539,7 @@ for triplet in "${triplets[@]}"; do
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
 		CFLAGS="${optflags}" \
-		CXXFLAGS="${optflags}" \
+		CXXFLAGS="${optflags} ${extra_cxx_flags}" \
 		LDFLAGS="${linkflags}"
 	
 	declare args=''
