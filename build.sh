@@ -29,8 +29,10 @@ declare -r binutils_directory='/tmp/binutils-with-gold-2.44'
 declare -r zstd_tarball='/tmp/zstd.tar.gz'
 declare -r zstd_directory='/tmp/zstd-dev'
 
+declare -r gcc_major='15'
+
 declare -r gcc_tarball='/tmp/gcc.tar.gz'
-declare -r gcc_directory='/tmp/gcc-releases-gcc-15'
+declare -r gcc_directory="/tmp/gcc-releases-gcc-${gcc_major}"
 
 declare -r max_jobs='40'
 
@@ -203,7 +205,7 @@ fi
 
 if ! [ -f "${gcc_tarball}" ]; then
 	curl \
-		--url 'https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-15.tar.gz' \
+		--url "https://github.com/gcc-mirror/gcc/archive/refs/heads/releases/gcc-${gcc_major}.tar.gz" \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -470,6 +472,7 @@ for triplet in "${triplets[@]}"; do
 	if ! (( is_native )); then
 		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
+		extra_configure_flags+=" --with-gxx-include-dir=${toolchain_directory}/${triplet}/include/c++/${gcc_major}/"
 	fi
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
@@ -547,6 +550,8 @@ for triplet in "${triplets[@]}"; do
 		gcc_cv_objdump="${CROSS_COMPILE_TRIPLET}-objdump" \
 		all --jobs="${max_jobs}"
 	make install
+	
+	rm "${toolchain_directory}/bin/${triplet}-${triplet}-"* || true
 	
 	cd "${toolchain_directory}/${triplet}/lib64" 2>/dev/null || cd "${toolchain_directory}/${triplet}/lib"
 	
