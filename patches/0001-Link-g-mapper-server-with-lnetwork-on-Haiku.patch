@@ -1,31 +1,35 @@
-From f106eef4b1754cd4d027e9a83c541ab77d3fd650 Mon Sep 17 00:00:00 2001
+From c60b194b7a678ae82f760b0dc40ee9f8e388112e Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
 Date: Tue, 15 Jul 2025 17:32:03 -0300
 Subject: [PATCH] Link g++-mapper-server with -lnetwork on Haiku
 
 ---
- c++tools/Makefile.in | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ c++tools/Makefile.in | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/c++tools/Makefile.in b/c++tools/Makefile.in
-index 5acc6d681..59a05e703 100644
+index 5acc6d681..69aa241b8 100644
 --- a/c++tools/Makefile.in
 +++ b/c++tools/Makefile.in
-@@ -32,7 +32,13 @@ CXXFLAGS := @CXXFLAGS@
- PICFLAG := @PICFLAG@
- LD_PICFLAG := @LD_PICFLAG@
- CXXOPTS := $(CXXFLAGS) $(PICFLAG) -fno-exceptions -fno-rtti
--LDFLAGS := @LDFLAGS@
-+HAIKU_LDFLAGS :=
-+
-+ifneq (,$(findstring haiku,$(host)))
-+    HAIKU_LDFLAGS += -lnetwork
-+endif
-+
-+LDFLAGS := $(HAIKU_LDFLAGS) @LDFLAGS@
- exeext := @EXEEXT@
+@@ -15,6 +15,7 @@
+ # along with this program; see the file COPYING3.  If not see
+ # <http://www.gnu.org/licenses/>.
+ 
++host := @host@
+ srcdir := @srcdir@
+ prefix := @prefix@
+ bindir := @bindir@
+@@ -37,6 +38,10 @@ exeext := @EXEEXT@
  LIBIBERTY := ../libiberty/libiberty.a
  VERSION.O := ../gcc/version.o
+ 
++ifneq (,$(findstring haiku,$(host)))
++    LDFLAGS += -lnetwork
++endif
++
+ all::
+ 
+ mostlyclean::
 -- 
 2.49.0
 

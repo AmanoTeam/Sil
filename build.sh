@@ -528,7 +528,6 @@ for triplet in "${triplets[@]}"; do
 		--disable-multilib \
 		--disable-nls \
 		--disable-libsanitizer \
-		--disable-c++-tools \
 		--without-headers \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
