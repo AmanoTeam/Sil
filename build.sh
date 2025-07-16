@@ -386,6 +386,7 @@ for triplet in "${triplets[@]}"; do
 		--enable-default-compressed-debug-sections-algorithm='zstd' \
 		--disable-gprofng \
 		--disable-default-execstack \
+		--disable-new-dtags \
 		--without-static-standard-libraries \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-zstd="${toolchain_directory}" \
@@ -476,7 +477,6 @@ for triplet in "${triplets[@]}"; do
 	if ! (( is_native )); then
 		extra_configure_flags+=" --with-cross-host=${CROSS_COMPILE_TRIPLET}"
 		extra_configure_flags+=" --with-toolexeclibdir=${toolchain_directory}/${triplet}/lib/"
-		extra_configure_flags+=" --with-gxx-include-dir=${toolchain_directory}/${triplet}/include/c++/${gcc_major}/"
 	fi
 	
 	[ -d "${gcc_directory}/build" ] || mkdir "${gcc_directory}/build"
