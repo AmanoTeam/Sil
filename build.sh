@@ -500,7 +500,7 @@ for triplet in "${triplets[@]}"; do
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
-		--enable-default-pie \
+		--disable-default-pie \
 		--enable-default-ssp \
 		--enable-gnu-indirect-function \
 		--disable-gnu-unique-object \
