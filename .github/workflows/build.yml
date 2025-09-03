@@ -17,7 +17,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: gcc-15.1.2
+        key: gcc-15-1
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -32,20 +32,11 @@ jobs:
         declare tarball_filename='/tmp/x86_64-linux-gnu.tar.xz'
         tar --directory='/tmp' --create --file=- 'sil' | xz --threads='0' --compress -9 > "${tarball_filename}"
         sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
-    - name: Upload artifact
-      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
-      uses: actions/upload-artifact@main
-      with:
-        name: native-toolchain
-        if-no-files-found: error
-        path: |
-          /tmp/x86_64-linux-gnu.tar.xz
-          /tmp/x86_64-linux-gnu.tar.xz.sha256
     - name: Cache artifact
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: gcc-15.1.2
+        key: gcc-15-1
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -58,9 +49,14 @@ jobs:
     strategy:
       matrix:
         target: [
+          # macOS
+          'aarch64-unknown-apple-darwin',
+          'x86_64-unknown-apple-darwin',
+          
           # Linux (glibc)
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
+          'arm-unknown-linux-gnueabi',
           'arm-unknown-linux-gnueabihf',
           'aarch64-unknown-linux-gnu',
           
@@ -95,10 +91,13 @@ jobs:
           
           # Android
           'x86_64-unknown-linux-android',
-          'i686-unknown-linux-android',
-          'arm-unknown-linux-androideabi',
+          'i686-unknown-linux-android21',
           'aarch64-unknown-linux-android',
-          'riscv64-unknown-linux-android'
+          'riscv64-unknown-linux-android',
+          'armv5-unknown-linux-androideabi21',
+          'armv7-unknown-linux-androideabi21',
+          'mips64el-unknown-linux-android',
+          'mipsel-unknown-linux-android21'
         ]
     steps:
     - uses: actions/checkout@main
@@ -114,7 +113,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: gcc-15.1.2
+        key: gcc-15-1
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -211,6 +210,18 @@ jobs:
             export PATH="${SIL_HOME}/bin:${PATH}"
             
             source "${SIL_HOME}/usr/local/share/sil/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
+            curl \
+                --silent \
+                --show-error \
+                --fail \
+                --url 'https://raw.githubusercontent.com/AmanoTeam/OSXCross-Builds/refs/heads/master/main.sh' \
+                    | bash -s -- install
+            
+            export DARWIN_HOME='/tmp/darwin'
+            export PATH="${DARWIN_HOME}/bin:${PATH}"
+            
+            source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-android'* ]]; then
             declare -r PINO_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Pino/releases/latest')")"
             declare -r PINO_TARBALL='/tmp/toolchain.tar.xz'
@@ -239,3 +250,23 @@ jobs:
         path: |
           /tmp/${{ matrix.target }}.tar.xz
           /tmp/${{ matrix.target }}.tar.xz.sha256
+
+  release:
+    needs: cross-build
+    runs-on: ubuntu-latest
+    name: Create release
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@main
+      - name: Create release
+        uses: softprops/action-gh-release@master
+        with:
+          tag_name: gcc-15
+          name: GCC 15.2.0
+          files: ./*/*-unknown-*.tar.xz*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          body: "* Update to GCC 15.2.0"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
