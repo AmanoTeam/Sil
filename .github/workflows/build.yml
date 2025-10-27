@@ -49,6 +49,10 @@ jobs:
     strategy:
       matrix:
         target: [
+          # macOS
+          'aarch64-unknown-apple-darwin',
+          'x86_64-unknown-apple-darwin',
+          
           # Linux (glibc)
           'x86_64-unknown-linux-gnu',
           'i386-unknown-linux-gnu',
@@ -88,10 +92,12 @@ jobs:
           # Android
           'x86_64-unknown-linux-android',
           'i686-unknown-linux-android21',
+          'aarch64-unknown-linux-android',
+          'riscv64-unknown-linux-android',
           'armv5-unknown-linux-androideabi21',
           'armv7-unknown-linux-androideabi21',
-          'aarch64-unknown-linux-android',
-          'riscv64-unknown-linux-android'
+          'mips64el-unknown-linux-android',
+          'mipsel-unknown-linux-android21'
         ]
     steps:
     - uses: actions/checkout@main
@@ -204,6 +210,18 @@ jobs:
             export PATH="${SIL_HOME}/bin:${PATH}"
             
             source "${SIL_HOME}/usr/local/share/sil/autotools/${{ matrix.target }}.sh"
+        elif [[ '${{ matrix.target }}' == *'-darwin' ]]; then
+            curl \
+                --silent \
+                --show-error \
+                --fail \
+                --url 'https://raw.githubusercontent.com/AmanoTeam/OSXCross-Builds/refs/heads/master/main.sh' \
+                    | bash -s -- install
+            
+            export DARWIN_HOME='/tmp/darwin'
+            export PATH="${DARWIN_HOME}/bin:${PATH}"
+            
+            source "${DARWIN_HOME}/usr/local/share/darwin/autotools/${{ matrix.target }}.sh"
         elif [[ '${{ matrix.target }}' == *'-android'* ]]; then
             declare -r PINO_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Pino/releases/latest')")"
             declare -r PINO_TARBALL='/tmp/toolchain.tar.xz'
@@ -216,12 +234,6 @@ jobs:
             export PATH="${PINO_HOME}/bin:${PATH}"
             
             source "${PINO_HOME}/usr/local/share/pino/autotools/${{ matrix.target }}.sh"
-            
-            rm \
-                "${PINO_HOME}/include/bionic/"{zconf,zlib}'.h' \
-                "${PINO_HOME}/"*'-unknown-linux-'{androideabi,android}'/include/'{zconf,zlib}'.h' \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/libz.'{a,so} \
-                "${PINO_HOME}/"*'-unknown-linux-android'*'/lib/static/libz.'{a,so}
         fi
         
         bash './build.sh' '${{ matrix.target }}'
@@ -238,3 +250,23 @@ jobs:
         path: |
           /tmp/${{ matrix.target }}.tar.xz
           /tmp/${{ matrix.target }}.tar.xz.sha256
+
+  release:
+    needs: cross-build
+    runs-on: ubuntu-latest
+    name: Create release
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@main
+      - name: Create release
+        uses: softprops/action-gh-release@master
+        with:
+          tag_name: gcc-15
+          name: GCC 15.2.0
+          files: ./*/*-unknown-*.tar.xz*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          body: "* Update to GCC 15.2.0"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
