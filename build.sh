@@ -45,7 +45,7 @@ declare -r linkflags='-Xlinker -s'
 
 declare -ra triplets=(
 	'x86_64-unknown-haiku'
-	# 'i586-unknown-haiku'
+	'i586-unknown-haiku'
 )
 
 declare -r PKG_CONFIG_PATH="${toolchain_directory}/lib/pkgconfig"
@@ -270,6 +270,7 @@ if ! [ -f "${gcc_tarball}" ]; then
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0001-GCC-15.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0002-Enable-automatic-linking-of-libatomic.patch"
+	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/patches/0003-Enable-automatic-linking-of-libhaiku.patch"
 	
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Turn-Wimplicit-function-declaration-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0002-Fix-libsanitizer-build-on-older-platforms.patch"
