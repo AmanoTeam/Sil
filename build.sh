@@ -151,7 +151,7 @@ fi
 
 if ! [ -f "${isl_tarball}" ]; then
 	curl \
-		--url 'https://sourceforge.net/projects/libisl/files/isl-0.27.tar.xz' \
+		--url 'https://deb.debian.org/debian/pool/main/i/isl/isl_0.27.orig.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -601,9 +601,7 @@ for triplet in "${triplets[@]}"; do
 		--with-isl="${toolchain_directory}" \
 		--with-zstd="${toolchain_directory}" \
 		--with-system-zlib \
-		--with-bugurl='https://github.com/AmanoTeam/Sil/issues' \
 		--with-gcc-major-version-only \
-		--with-pkgversion="Sil v1.0-${revision}" \
 		--with-sysroot="${toolchain_directory}/${triplet}" \
 		--with-native-system-header-dir='/include' \
 		--with-default-libstdcxx-abi='gcc4-compatible' \
@@ -635,8 +633,6 @@ for triplet in "${triplets[@]}"; do
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-libgomp \
-		--with-specs='%{!fno-pic: %{!fno-PIC: %{!fpic: %{!fPIC: -fpic}}}} %{!fno-plt: %{!fplt: -fno-plt}}' \
-		--disable-c++-tools \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-werror \
@@ -742,6 +738,14 @@ if ! (( is_native )) && [[ "${CROSS_COMPILE_TRIPLET}" != *'-darwin'* ]]; then
 	
 	# libiconv
 	declare name=$(realpath $("${cc}" --print-file-name='libiconv.so'))
+	
+	if [ -f "${name}" ]; then
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
+	
+	# libcharset
+	declare name=$(realpath $("${cc}" --print-file-name='libcharset.so'))
 	
 	if [ -f "${name}" ]; then
 		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
