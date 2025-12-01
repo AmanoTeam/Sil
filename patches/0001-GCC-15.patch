@@ -1,7 +1,7 @@
-From 6122c7bb561d774a05c8e51f5729195e02f5e282 Mon Sep 17 00:00:00 2001
+From 2e427c3564d91a7ab7bbbed199db0ee602b19e33 Mon Sep 17 00:00:00 2001
 From: Kartatz <105828205+Kartatz@users.noreply.github.com>
-Date: Mon, 27 Oct 2025 00:12:25 -0300
-Subject: [PATCH] GCC 15
+Date: Sun, 30 Nov 2025 23:02:24 -0300
+Subject: [PATCH 1/2] GCC 15
 
 ---
  config.rpath                                  |   2 +
@@ -18,7 +18,7 @@ Subject: [PATCH] GCC 15
  gcc/config/haiku-protos.h                     |  21 ++
  gcc/config/haiku-stdint.h                     |  55 ++++
  gcc/config/haiku.c                            |  39 +++
- gcc/config/haiku.h                            | 231 +++++++++++++++
+ gcc/config/haiku.h                            | 226 +++++++++++++++
  gcc/config/haiku.opt                          |  32 +++
  gcc/config/haiku.opt.urls                     |   2 +
  gcc/config/i386/haiku.h                       |  69 +++++
@@ -60,7 +60,7 @@ Subject: [PATCH] GCC 15
  libstdc++-v3/crossconfig.m4                   |  44 ++-
  libstdc++-v3/libsupc++/tinfo.cc               |   9 +
  libtool.m4                                    |  11 +-
- 56 files changed, 2433 insertions(+), 124 deletions(-)
+ 56 files changed, 2428 insertions(+), 124 deletions(-)
  create mode 100644 gcc/config/aarch64/aarch64-haiku.h
  create mode 100644 gcc/config/aarch64/t-aarch64-haiku
  create mode 100644 gcc/config/arm/haiku.h
@@ -864,10 +864,10 @@ index 000000000..af14c02f4
 +}
 diff --git a/gcc/config/haiku.h b/gcc/config/haiku.h
 new file mode 100644
-index 000000000..b768dfdf1
+index 000000000..bda37600b
 --- /dev/null
 +++ b/gcc/config/haiku.h
-@@ -0,0 +1,231 @@
+@@ -0,0 +1,226 @@
 +/* Definitions of target machine for GCC.
 +   Common Haiku definitions for all architectures.
 +   Copyright (C) 1998, 1999, 2000, 2001, 2002, 2004, 2005
@@ -974,43 +974,41 @@ index 000000000..b768dfdf1
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { FIXED_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { TOOL_INCLUDE_DIR, "BINUTILS", 0, 1, 0, 0 }, \
-+    { "/boot/system/non-packaged/develop/headers/" HYBRID_SECONDARY, 0, 0, 0, 1, 0 }, \
-+    { "/boot/system/develop/headers/os", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/app", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/device", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/drivers", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/game", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/interface", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/kernel", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/locale", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/mail", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/media", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/midi", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/midi2", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/net", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/opengl", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/storage", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/support", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/translation", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/graphics", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/input_server", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/mail_daemon", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/registrar", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/screen_saver", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/tracker", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/Deskbar", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/NetPositive", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/Tracker", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/3rdparty", 0, 0, 0, 1, 0 }, \
-+    { "/boot/system/develop/headers/bsd", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/glibc", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/gnu", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/posix", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/" HYBRID_SECONDARY, 0, 0, 0, 1, 0 }, \
++    { "/include/os", 0, 0, 1, 1, 0 }, \
++    { "/include/os/app", 0, 0, 1, 1, 0 }, \
++    { "/include/os/device", 0, 0, 1, 1, 0 }, \
++    { "/include/os/drivers", 0, 0, 1, 1, 0 }, \
++    { "/include/os/game", 0, 0, 1, 1, 0 }, \
++    { "/include/os/interface", 0, 0, 1, 1, 0 }, \
++    { "/include/os/kernel", 0, 0, 1, 1, 0 }, \
++    { "/include/os/locale", 0, 0, 1, 1, 0 }, \
++    { "/include/os/mail", 0, 0, 1, 1, 0 }, \
++    { "/include/os/media", 0, 0, 1, 1, 0 }, \
++    { "/include/os/midi", 0, 0, 1, 1, 0 }, \
++    { "/include/os/midi2", 0, 0, 1, 1, 0 }, \
++    { "/include/os/net", 0, 0, 1, 1, 0 }, \
++    { "/include/os/opengl", 0, 0, 1, 1, 0 }, \
++    { "/include/os/storage", 0, 0, 1, 1, 0 }, \
++    { "/include/os/support", 0, 0, 1, 1, 0 }, \
++    { "/include/os/translation", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/graphics", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/input_server", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/mail_daemon", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/registrar", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/screen_saver", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/tracker", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/Deskbar", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/NetPositive", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/Tracker", 0, 0, 1, 1, 0 }, \
++    { "/include/3rdparty", 0, 0, 0, 1, 0 }, \
++    { "/include/bsd", 0, 0, 1, 1, 0 }, \
++    { "/include/glibc", 0, 0, 1, 1, 0 }, \
++    { "/include/gnu", 0, 0, 1, 1, 0 }, \
++    { "/include/posix", 0, 0, 1, 1, 0 }, \
++    { "/include/" HYBRID_SECONDARY, 0, 0, 0, 1, 0 }, \
 +        /* Hybrid secondary folders for os kits not in base haiku package */\
-+    { "/boot/system/develop/headers/" HYBRID_SECONDARY "/os", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/" HYBRID_SECONDARY "/os/opengl", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers", 0, 0, 0, 1, 0 }, \
++    { "/include/" HYBRID_SECONDARY "/os", 0, 0, 1, 1, 0 }, \
++    { "/include/" HYBRID_SECONDARY "/os/opengl", 0, 0, 1, 1, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}
 +#else /* HYBRID_SECONDARY */
@@ -1027,40 +1025,37 @@ index 000000000..b768dfdf1
 +    { GCC_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { FIXED_INCLUDE_DIR, "GCC", 0, 0, 0, 0 }, \
 +    { TOOL_INCLUDE_DIR, "BINUTILS", 0, 1, 0, 0 }, \
-+    { "/boot/system/non-packaged/develop/headers", 0, 0, 0, 1, 0 }, \
-+    { "/boot/system/develop/headers/os", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/app", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/device", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/drivers", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/game", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/interface", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/kernel", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/locale", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/mail", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/media", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/midi", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/midi2", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/net", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/opengl", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/storage", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/support", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/translation", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/graphics", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/input_server", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/mail_daemon", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/registrar", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/screen_saver", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/add-ons/tracker", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/Deskbar", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/NetPositive", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/os/be_apps/Tracker", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/3rdparty", 0, 0, 0, 1, 0 }, \
-+    	/* TODO: To be removed when libtiff has been outsourced. */\
-+    { "/boot/system/develop/headers/bsd", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/glibc", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/gnu", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers/posix", 0, 0, 1, 1, 0 }, \
-+    { "/boot/system/develop/headers", 0, 0, 0, 1, 0 }, \
++    { "/include/os", 0, 0, 1, 1, 0 }, \
++    { "/include/os/app", 0, 0, 1, 1, 0 }, \
++    { "/include/os/device", 0, 0, 1, 1, 0 }, \
++    { "/include/os/drivers", 0, 0, 1, 1, 0 }, \
++    { "/include/os/game", 0, 0, 1, 1, 0 }, \
++    { "/include/os/interface", 0, 0, 1, 1, 0 }, \
++    { "/include/os/kernel", 0, 0, 1, 1, 0 }, \
++    { "/include/os/locale", 0, 0, 1, 1, 0 }, \
++    { "/include/os/mail", 0, 0, 1, 1, 0 }, \
++    { "/include/os/media", 0, 0, 1, 1, 0 }, \
++    { "/include/os/midi", 0, 0, 1, 1, 0 }, \
++    { "/include/os/midi2", 0, 0, 1, 1, 0 }, \
++    { "/include/os/net", 0, 0, 1, 1, 0 }, \
++    { "/include/os/opengl", 0, 0, 1, 1, 0 }, \
++    { "/include/os/storage", 0, 0, 1, 1, 0 }, \
++    { "/include/os/support", 0, 0, 1, 1, 0 }, \
++    { "/include/os/translation", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/graphics", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/input_server", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/mail_daemon", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/registrar", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/screen_saver", 0, 0, 1, 1, 0 }, \
++    { "/include/os/add-ons/tracker", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/Deskbar", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/NetPositive", 0, 0, 1, 1, 0 }, \
++    { "/include/os/be_apps/Tracker", 0, 0, 1, 1, 0 }, \
++    { "/include/3rdparty", 0, 0, 0, 1, 0 }, \
++    { "/include/bsd", 0, 0, 1, 1, 0 }, \
++    { "/include/glibc", 0, 0, 1, 1, 0 }, \
++    { "/include/gnu", 0, 0, 1, 1, 0 }, \
++    { "/include/posix", 0, 0, 1, 1, 0 }, \
 +    { 0, 0, 0, 0, 0, 0 } \
 +}
 +#endif /* HYBRID_SECONDARY */
@@ -1079,12 +1074,12 @@ index 000000000..b768dfdf1
 +#ifdef HYBRID_SECONDARY
 +/* For a secondary compiler on a hybrid system, use alternative search paths.*/
 +#define STANDARD_STARTFILE_PREFIX_1 \
-+  "/boot/system/non-packaged/develop/lib/" HYBRID_SECONDARY "/"
++  "/lib/" HYBRID_SECONDARY "/"
 +#define STANDARD_STARTFILE_PREFIX_2 \
-+  "/boot/system/develop/lib/" HYBRID_SECONDARY "/"
++  "/lib/" HYBRID_SECONDARY "/"
 +#else /* HYBRID_SECONDARY */
-+#define STANDARD_STARTFILE_PREFIX_1   "/boot/system/non-packaged/develop/lib/"
-+#define STANDARD_STARTFILE_PREFIX_2   "/boot/system/develop/lib/"
++#define STANDARD_STARTFILE_PREFIX_1   "/lib/"
++#define STANDARD_STARTFILE_PREFIX_2   "/lib/"
 +#endif /* HYBRID_SECONDARY */
 +
 +/* Haiku doesn't have a separate math library.  */
@@ -1943,13 +1938,13 @@ index 000000000..a8d212dcb
 +
 diff --git a/gcc/config/t-haiku b/gcc/config/t-haiku
 new file mode 100644
-index 000000000..ba1f7f517
+index 000000000..90b27d26f
 --- /dev/null
 +++ b/gcc/config/t-haiku
 @@ -0,0 +1,9 @@
 +# There are system headers elsewhere, but these are the ones that
 +# we are most likely to want to apply any fixes to.
-+NATIVE_SYSTEM_HEADER_DIR = /boot/system/develop/headers
++NATIVE_SYSTEM_HEADER_DIR = /include
 +LIMITS_H_TEST = [ -f $(SYSTEM_HEADER_DIR)/posix/limits.h ]
 +
 +# Haiku-specific attributes
@@ -3906,5 +3901,5 @@ index add2d4a1e..c17ee8bca 100644
  
      hpux*)
 -- 
-2.51.1
+2.51.2
 
