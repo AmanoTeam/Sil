@@ -39,7 +39,6 @@ declare -r gcc_directory="/tmp/gcc-releases-gcc-${gcc_major}"
 
 declare -r max_jobs='40'
 
-declare -r pieflags='-fPIE'
 declare -r ccflags='-w -O2'
 declare -r linkflags='-Xlinker -s'
 
@@ -94,7 +93,7 @@ declare -r \
 
 if ! [ -f "${gmp_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz' \
+		--url 'https://gnu.mirror.constant.com/gmp/gmp-6.3.0.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -113,7 +112,7 @@ fi
 
 if ! [ -f "${mpfr_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/mpfr/mpfr-4.2.2.tar.xz' \
+		--url 'https://gnu.mirror.constant.com/mpfr/mpfr-4.2.2.tar.xz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -132,7 +131,7 @@ fi
 
 if ! [ -f "${mpc_tarball}" ]; then
 	curl \
-		--url 'https://mirrors.kernel.org/gnu/mpc/mpc-1.3.1.tar.gz' \
+		--url 'https://gnu.mirror.constant.com/mpc/mpc-1.3.1.tar.gz' \
 		--retry '30' \
 		--retry-all-errors \
 		--retry-delay '0' \
@@ -166,6 +165,10 @@ if ! [ -f "${isl_tarball}" ]; then
 		--file="${isl_tarball}"
 	
 	patch --directory="${isl_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0001-Remove-hardcoded-RPATH-and-versioned-SONAME-from-libisl.patch"
+	
+	for name in "${isl_directory}/isl_test"*; do
+		echo 'int main() {}' > "${name}"
+	done
 fi
 
 if ! [ -f "${binutils_tarball}" ]; then
@@ -279,8 +282,6 @@ if ! [ -f "${gcc_tarball}" ]; then
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0005-Turn-Wint-conversion-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/gcc-15/0006-Turn-Wincompatible-pointer-types-back-into-an-warning.patch"
 	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0007-Add-relative-RPATHs-to-GCC-host-tools.patch"
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0008-Add-ARM-and-ARM64-drivers-to-OpenBSD-host-tools.patch" || true
-	patch --directory="${gcc_directory}" --strip='1' --input="${workdir}/submodules/obggcc/patches/0009-Fix-missing-stdint.h-include-when-compiling-host-tools-on-OpenBSD.patch"
 fi
 
 # Follow Debian's approach to remove hardcoded RPATHs from binaries
@@ -303,15 +304,6 @@ sed \
 	"${mpc_directory}/configure" \
 	"${mpfr_directory}/configure" \
 	"${gmp_directory}/configure"
-
-# Fix Autotools mistakenly detecting shared libraries as not supported on OpenBSD
-while read file; do
-	sed \
-		--in-place \
-		--regexp-extended \
-		's|test -f /usr/libexec/ld.so|true|g' \
-		"${file}"
-done <<< "$(find '/tmp' -type 'f' -name 'configure')"
 
 # Force GCC and binutils to prefix host tools with the target triplet even in native builds
 sed \
@@ -396,8 +388,9 @@ fi
 	--with-gmp-prefix="${toolchain_directory}" \
 	--enable-shared \
 	--disable-static \
-	CFLAGS="${pieflags} ${ccflags}" \
-	CXXFLAGS="${pieflags} ${ccflags}" \
+	--with-pic \
+	CFLAGS="${ccflags}" \
+	CXXFLAGS="${ccflags}" \
 	LDFLAGS="${linkflags} ${isl_ldflags}"
 
 make all --jobs
@@ -611,10 +604,6 @@ for triplet in "${triplets[@]}"; do
 		--enable-__cxa_atexit \
 		--enable-cet='auto' \
 		--enable-checking='release' \
-		--disable-default-pie \
-		--enable-default-ssp \
-		--enable-gnu-indirect-function \
-		--disable-gnu-unique-object \
 		--enable-libstdcxx-backtrace \
 		--enable-libstdcxx-filesystem-ts \
 		--enable-libstdcxx-static-eh-pool \
@@ -630,20 +619,26 @@ for triplet in "${triplets[@]}"; do
 		--enable-languages='c,c++' \
 		--enable-frame-pointer \
 		--enable-plugin \
-		--enable-cxx-flags="${linkflags}" \
 		--enable-host-pie \
 		--enable-host-shared \
 		--enable-libgomp \
 		--with-specs="${specs}" \
 		--with-pic \
+		--with-gnu-as \
+		--with-gnu-ld \
+		--disable-gnu-unique-object \
+		--disable-gnu-indirect-function \
+		--disable-default-pie \
+		--disable-default-ssp \
 		--disable-bootstrap \
 		--disable-libstdcxx-pch \
 		--disable-werror \
-		--disable-multilib \
 		--disable-nls \
 		--disable-libsanitizer \
 		--disable-tls \
-		--without-headers \
+		--disable-multilib \
+		--disable-canonical-system-headers \
+		--disable-libstdcxx-verbose \
 		--without-static-standard-libraries \
 		${extra_configure_flags} \
 		CFLAGS="${ccflags}" \
@@ -678,7 +673,14 @@ for triplet in "${triplets[@]}"; do
 done
 
 # Delete libtool files and other unnecessary files GCC installs
-rm --force --recursive "${toolchain_directory}/share"
+rm \
+	--force \
+	--recursive \
+	"${toolchain_directory}/share" \
+	"${toolchain_directory}/lib/lib"*'.a' \
+	"${toolchain_directory}/include" \
+	"${toolchain_directory}/lib/pkgconfig" \
+	"${toolchain_directory}/lib/cmake"
 
 find \
 	"${toolchain_directory}" \
